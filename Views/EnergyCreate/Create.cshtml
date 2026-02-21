@@ -1,0 +1,75 @@
+﻿@model PowerTrack.Models.EnergyConsumption
+@{
+  ViewData["Title"] = "Add Energy Consumption";
+  var currentYear = DateTime.Now.Year;
+  int selectedYear = Model?.Year ?? currentYear;
+  var currentMonth = DateTime.Now.Month;
+  int selectedMonth = Model?.Month ?? currentMonth;
+}
+
+<h2>Add Energy Consumption</h2>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (ViewBag.Error != null)
+{
+  <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<form asp-action="Create" asp-controller="EnergyCreate" method="post">
+
+  <!-- Year -->
+  <div class="mb-3">
+    <label asp-for="Year" class="form-label"></label>
+    <input asp-for="Year"
+           class="form-control"
+           type="number"
+           min="2000"
+           max="@currentYear"
+           value="@selectedYear" />
+  </div>
+
+  <!-- Month Dropdown -->
+  <div class="mb-3">
+    <label asp-for="Month" class="form-label"></label>
+
+    <select asp-for="Month" class="form-control">
+
+      @for (int m = 1; m <= 12; m++)
+      {
+        bool disableMonth = selectedYear == currentYear && m > currentMonth;
+
+        <option value="@m" disabled="@(disableMonth)">
+          @m - @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+        </option>
+      }
+
+    </select>
+  </div>
+  <!-- Consumption -->
+  <div class="mb-3">
+    <label asp-for="ConsumptionKWh" class="form-label"></label>
+    <input asp-for="ConsumptionKWh"
+           class="form-control"
+           type="number"
+           step="0.01"
+           min="0" />
+  </div>
+
+  <!-- Price -->
+  <div class="mb-3">
+    <label asp-for="PricePerKWh" class="form-label"></label>
+    <input asp-for="PricePerKWh"
+           class="form-control"
+           type="number"
+           step="0.01"
+           min="0" />
+  </div>
+
+  <button type="submit" class="btn btn-success">Save</button>
+  <a asp-action="Index" asp-controller="EnergyTotal" class="btn btn-secondary">Cancel</a>
+
+</form>

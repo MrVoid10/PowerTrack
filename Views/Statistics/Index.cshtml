@@ -1,0 +1,117 @@
+﻿@{
+  ViewData["Title"] = "Energy Statistics";
+
+  var labelsJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Labels);
+  var consumptionJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Consumption);
+
+  int selectedMonth = ViewBag.SelectedMonth;
+  int selectedYear = ViewBag.SelectedYear;
+
+  int currentYear = ViewBag.CurrentYear;
+  int currentMonth = ViewBag.CurrentMonth;
+
+  bool disableNext = selectedYear >= currentYear;
+}
+
+<h2>Energy Usage Statistics</h2>
+
+<form method="get" asp-controller="Statistics" asp-action="Index" class="mb-3">
+
+  <div class="row align-items-end">
+
+    <!-- Month Selector -->
+    <div class="col-md-3">
+      <label>Month</label>
+      <select name="month" class="form-control">
+
+        @for (int m = 1; m <= 12; m++)
+        {
+          bool disableMonth = selectedYear == currentYear && m > currentMonth;
+
+          <option value="@m"
+                  selected="@(m == selectedMonth)"
+                  disabled="@(disableMonth)">
+            @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+          </option>
+        }
+
+      </select>
+    </div>
+
+    <!-- Year Selector -->
+    <div class="col-md-3">
+      <label>Year</label>
+      <input type="number"
+             name="year"
+             value="@selectedYear"
+             min="2000"
+             max="@currentYear"
+             class="form-control" />
+    </div>
+
+    <!-- Buttons -->
+    <div class="col-md-6 mt-2">
+
+      <button type="submit" class="btn btn-primary">
+        Show
+      </button>
+
+      <a class="btn btn-secondary"
+         asp-action="Index"
+         asp-route-month="@selectedMonth"
+         asp-route-year="@(selectedYear - 1)">
+        ◀ Previous Year
+      </a>
+
+      <a class="btn btn-secondary @(disableNext ? "disabled" : "")"
+         asp-action="Index"
+         asp-route-month="@selectedMonth"
+         asp-route-year="@(selectedYear + 1)">
+        Next Year ▶
+      </a>
+
+    </div>
+
+  </div>
+</form>
+
+<h5>
+  Showing period:
+  @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(selectedMonth)
+  @(selectedYear - 1)
+  →
+  @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(selectedMonth)
+  @selectedYear
+</h5>
+
+<hr />
+
+<canvas id="energyChart" height="100"></canvas>
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('energyChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(labelsJson),
+            datasets: [{
+                label: 'Consumption (kWh)',
+                data: @Html.Raw(consumptionJson),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+  </script>
+}
