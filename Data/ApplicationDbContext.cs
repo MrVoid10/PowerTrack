@@ -8,6 +8,7 @@ namespace PowerTrack.Data
     public DbSet<User> Users { get; set; }
     public DbSet<EnergyConsumption> EnergyConsumptions { get; set; }
     public DbSet<Tariff> Tariffs { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)

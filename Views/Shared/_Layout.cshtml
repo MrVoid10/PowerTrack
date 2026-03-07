@@ -1,65 +1,163 @@
 ﻿@{
   var userId = Context.Session.GetInt32("UserId");
+  var userName = Context.Session.GetString("UserName");
+  var userEmail = Context.Session.GetString("UserEmail");
+  var userRole = Context.Session.GetString("Role");
+
+  bool isAdmin = string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase);
+  bool isLoggedIn = userId != null;
 }
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>@ViewData["Title"] - PowerTrack</title>
-  <script type="importmap"></script>
+
   <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/PowerTrack.styles.css" asp-append-version="true" />
 </head>
+
 <body>
+
   <header>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+    <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom shadow-sm mb-3">
       <div class="container-fluid">
-        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PowerTrack</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                aria-expanded="false" aria-label="Toggle navigation">
+
+        <a class="navbar-brand fw-bold text-primary"
+           asp-controller="Home"
+           asp-action="Index">
+          PowerTrack
+        </a>
+
+        <button class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target=".navbar-collapse">
           <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
+          <!-- LEFT MENU -->
           <ul class="navbar-nav flex-grow-1">
+
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+              <a class="nav-link text-dark"
+                 asp-controller="Home"
+                 asp-action="Index">
+                Home
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-controller="EnergyTotal" asp-action="Index">Energy Records</a>
+              <a class="nav-link text-dark"
+                 asp-controller="EnergyTotal"
+                 asp-action="Index">
+                Energy Records
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-controller="EnergyCreate" asp-action="Create">Add Energy</a>
+              <a class="nav-link text-dark"
+                 asp-controller="EnergyCreate"
+                 asp-action="Create">
+                Add Energy
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-controller="Statistics" asp-action="Index">Statistics</a>
+              <a class="nav-link text-dark"
+                 asp-controller="Statistics"
+                 asp-action="Index">
+                Statistics
+              </a>
             </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-dark"
+                 asp-controller="Export"
+                 asp-action="Index">
+                Import & Export
+              </a>
+            </li>
+
+            @if (isAdmin)
+            {
+              <li class="nav-item dropdown ms-2">
+
+                <a class="nav-link dropdown-toggle text-danger fw-bold"
+                   href="#"
+                   role="button"
+                   data-bs-toggle="dropdown">
+                  Admin Panel
+                </a>
+
+                <ul class="dropdown-menu">
+                  <li>
+                    <a class="dropdown-item"
+                       asp-controller="AdminStatistics"
+                       asp-action="Index">
+                      Admin Dashboard
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item"
+                       asp-controller="AdminAudit"
+                       asp-action="Index">
+                      Admin AuditLog
+                    </a>
+                  </li>
+                </ul>
+
+              </li>
+            }
+
           </ul>
 
+          <!-- RIGHT MENU -->
           <ul class="navbar-nav">
-            @if (Context.Session.GetInt32("UserId") != null)
+
+            @if (isLoggedIn)
             {
-              var name = Context.Session.GetString("UserName");
-              <!-- store 'Name' in session -->
-              var email = Context.Session.GetString("UserEmail");
-              <li class="nav-item d-flex align-items-center">
-                <span class="nav-link text-dark" title="@email">Hello, @name</span>
+              <li class="nav-item d-flex align-items-center me-3">
+                <span class="nav-link text-dark"
+                      title="@userEmail">
+                  Hello, @userName
+                </span>
               </li>
+
               <li class="nav-item">
-                <a class="nav-link text-dark" asp-controller="Account" asp-action="Logout">Logout</a>
+                <a class="nav-link text-danger fw-bold"
+                   asp-controller="Account"
+                   asp-action="Logout">
+                  Logout
+                </a>
               </li>
             }
             else
             {
               <li class="nav-item">
-                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                <a class="nav-link text-dark"
+                   asp-controller="Account"
+                   asp-action="Login">
+                  Login
+                </a>
               </li>
+
               <li class="nav-item">
-                <a class="nav-link text-dark" asp-controller="Account" asp-action="Signup">Sign Up</a>
+                <a class="nav-link text-dark"
+                   asp-controller="Account"
+                   asp-action="Signup">
+                  Sign Up
+                </a>
               </li>
             }
+
           </ul>
+
         </div>
       </div>
     </nav>
@@ -71,15 +169,18 @@
     </main>
   </div>
 
-  <footer class="border-top footer text-muted">
-    <div class="container">
-      &copy; 2026 - PowerTrack - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+  <footer class="border-top footer text-muted mt-4">
+    <div class="container text-center">
+      &copy; 2026 - PowerTrack -
+      <a asp-controller="Home" asp-action="Privacy">Privacy</a>
     </div>
   </footer>
 
   <script src="~/lib/jquery/dist/jquery.min.js"></script>
   <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
   <script src="~/js/site.js" asp-append-version="true"></script>
+
   @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

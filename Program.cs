@@ -1,26 +1,56 @@
 using Microsoft.EntityFrameworkCore;
 using PowerTrack.Data;
+using PowerTrack.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// =====================================================
+// DATABASE
+// =====================================================
 
-// Add MVC controllers with views
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
+
+// =====================================================
+// MVC
+// =====================================================
+
 builder.Services.AddControllersWithViews();
 
-// Add session support for tracking logged-in users
+// =====================================================
+// SESSION SUPPORT
+// =====================================================
+
 builder.Services.AddSession(options =>
 {
-  options.IdleTimeout = TimeSpan.FromMinutes(30); // session timeout
-  options.Cookie.HttpOnly = true;                  // secure cookies
-  options.Cookie.IsEssential = true;              // required for session to work
+  options.IdleTimeout = TimeSpan.FromMinutes(30);
+  options.Cookie.HttpOnly = true;
+  options.Cookie.IsEssential = true;
 });
+
+// =====================================================
+// DEPENDENCY INJECTION SERVICES
+// =====================================================
+
+// ⭐ Required for AuditService
+builder.Services.AddHttpContextAccessor();
+
+// ⭐ Custom Services
+builder.Services.AddScoped<AuditService>();
+//builder.Services.AddScoped<AdminAuditService>();
+
+// =====================================================
+// BUILD APP
+// =====================================================
 
 var app = builder.Build();
 
-// Middleware pipeline
+// =====================================================
+// MIDDLEWARE PIPELINE
+// =====================================================
+
 if (!app.Environment.IsDevelopment())
 {
   app.UseExceptionHandler("/Home/Error");
@@ -32,14 +62,17 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Enable session before authorization
 app.UseSession();
 
 app.UseAuthorization();
 
-// Default route
+// =====================================================
+// ROUTES
+// =====================================================
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}"
+);
 
 app.Run();

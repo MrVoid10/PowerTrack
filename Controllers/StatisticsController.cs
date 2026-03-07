@@ -1,75 +1,186 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿//using Microsoft.AspNetCore.Mvc;
+//using PowerTrack.Data;
+
+//namespace PowerTrack.Controllers
+//{
+//  public class StatisticsController : Controller
+//  {
+//    private readonly ApplicationDbContext _context;
+
+//    public StatisticsController(ApplicationDbContext context)
+//    {
+//      _context = context;
+//    }
+//    public IActionResult Index(int? month, int? year)
+//    {
+//      var userId = HttpContext.Session.GetInt32("UserId");
+//      if (userId == null)
+//      {
+//        TempData["Error"] = "You must be logged in to view statistics.";
+//        return RedirectToAction("Login", "Account");
+//      }
+
+//      var now = DateTime.Now;
+
+//      int selectedYear = year ?? now.Year;
+//      int selectedMonth = month ?? now.Month;
+
+//      // 🔒 SAFEGUARDS
+//      selectedYear = Math.Clamp(selectedYear, 2000, now.Year);
+//      selectedMonth = Math.Clamp(selectedMonth, 1, 12);
+
+//      if (selectedYear == now.Year && selectedMonth > now.Month)
+//        selectedMonth = now.Month;
+
+//      // perioada de 12 luni
+//      var endDate = new DateTime(selectedYear, selectedMonth, 1);
+//      var startDate = endDate.AddMonths(-12);
+
+//      int startYear = startDate.Year;
+//      int startMonth = startDate.Month;
+
+//      int endYear = endDate.Year;
+//      int endMonth = endDate.Month;
+
+//      // 🔥 QUERY CORECT (100% traductibil SQL)
+//      var data = _context.EnergyConsumptions
+//          .Where(e => e.UserId == userId.Value)
+//          .Where(e =>
+//              (e.Year > startYear || (e.Year == startYear && e.Month >= startMonth)) &&
+//              (e.Year < endYear || (e.Year == endYear && e.Month <= endMonth))
+//          )
+//          .OrderBy(e => e.Year)
+//          .ThenBy(e => e.Month)
+//          .ToList();
+
+//      // Labels pentru grafice
+//      var labels = data.Select(e =>
+//          $"{System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(e.Month)} {e.Year}"
+//      ).ToList();
+
+//      var consumption = data
+//          .Select(e => e.ConsumptionKWh)
+//          .ToList();
+
+//      ViewBag.Labels = labels;
+//      ViewBag.Consumption = consumption;
+//      ViewBag.SelectedMonth = selectedMonth;
+//      ViewBag.SelectedYear = selectedYear;
+//      ViewBag.CurrentYear = now.Year;
+//      ViewBag.CurrentMonth = now.Month;
+
+//      return View();
+//    }
+//  }
+//}
+
+using Microsoft.AspNetCore.Mvc;
 using PowerTrack.Data;
+using PowerTrack.Services;
+using System.Globalization;
 
 namespace PowerTrack.Controllers
 {
   public class StatisticsController : Controller
   {
     private readonly ApplicationDbContext _context;
+    private readonly AuditService _audit;
 
-    public StatisticsController(ApplicationDbContext context)
+    public StatisticsController(
+        ApplicationDbContext context,
+        AuditService audit)
     {
       _context = context;
+      _audit = audit;
     }
 
     public IActionResult Index(int? month, int? year)
     {
       var userId = HttpContext.Session.GetInt32("UserId");
+
       if (userId == null)
       {
-        TempData["Error"] = "You must be logged in to view statistics.";
+        _audit.Log(
+            "Statistics Access",
+            "FAILED",
+            "WARNING",
+            "Unauthorized access to statistics page"
+        );
+
+        TempData["Error"] =
+            "You must be logged in to view statistics.";
+
         return RedirectToAction("Login", "Account");
       }
 
-      var now = DateTime.Now;
+      try
+      {
+        var now = DateTime.Now;
 
-      int selectedYear = year ?? now.Year;
-      int selectedMonth = month ?? now.Month;
+        int selectedYear = year ?? now.Year;
+        int selectedMonth = month ?? now.Month;
 
-      // 🔒 SAFEGUARD 1: Limit year
-      if (selectedYear > now.Year)
-        selectedYear = now.Year;
+        selectedYear = Math.Clamp(selectedYear, 2000, now.Year);
+        selectedMonth = Math.Clamp(selectedMonth, 1, 12);
 
-      if (selectedYear < 2000)
-        selectedYear = 2000;
+        if (selectedYear == now.Year && selectedMonth > now.Month)
+          selectedMonth = now.Month;
 
-      // 🔒 SAFEGUARD 2: If current year, limit month
-      if (selectedYear == now.Year && selectedMonth > now.Month)
-        selectedMonth = now.Month;
+        var endDate = new DateTime(selectedYear, selectedMonth, 1);
+        var startDate = endDate.AddMonths(-12);
 
-      // 🔒 SAFEGUARD 3: Month bounds
-      if (selectedMonth < 1)
-        selectedMonth = 1;
+        int startYear = startDate.Year;
+        int startMonth = startDate.Month;
 
-      if (selectedMonth > 12)
-        selectedMonth = 12;
+        int endYear = endDate.Year;
+        int endMonth = endDate.Month;
 
-      var endDate = new DateTime(selectedYear, selectedMonth, 1);
-      var startDate = endDate.AddMonths(-12);
+        var data = _context.EnergyConsumptions
+            .Where(e => e.UserId == userId.Value)
+            .Where(e =>
+                (e.Year > startYear || (e.Year == startYear && e.Month >= startMonth)) &&
+                (e.Year < endYear || (e.Year == endYear && e.Month <= endMonth))
+            )
+            .OrderBy(e => e.Year)
+            .ThenBy(e => e.Month)
+            .ToList();
 
-      var data = _context.EnergyConsumptions
-          .Where(e => e.UserId == userId.Value)
-          .ToList()
-          .Where(e =>
-          {
-            var recordDate = new DateTime(e.Year, e.Month, 1);
-            return recordDate >= startDate && recordDate <= endDate;
-          })
-          .OrderBy(e => e.Year)
-          .ThenBy(e => e.Month)
-          .ToList();
+        var labels = data.Select(e =>
+            $"{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(e.Month)} {e.Year}"
+        ).ToList();
 
-      var labels = data.Select(e => $"{e.Month}/{e.Year}").ToList();
-      var consumption = data.Select(e => e.ConsumptionKWh).ToList();
+        var consumption = data
+            .Select(e => e.ConsumptionKWh)
+            .ToList();
 
-      ViewBag.Labels = labels;
-      ViewBag.Consumption = consumption;
-      ViewBag.SelectedMonth = selectedMonth;
-      ViewBag.SelectedYear = selectedYear;
-      ViewBag.CurrentYear = now.Year;
-      ViewBag.CurrentMonth = now.Month;
+        _audit.Log(
+            "Statistics View",
+            "SUCCESS",
+            "INFO",
+            $"User {userId} viewed statistics for {selectedMonth}/{selectedYear}"
+        );
 
-      return View();
+        ViewBag.Labels = labels;
+        ViewBag.Consumption = consumption;
+        ViewBag.SelectedMonth = selectedMonth;
+        ViewBag.SelectedYear = selectedYear;
+        ViewBag.CurrentYear = now.Year;
+        ViewBag.CurrentMonth = now.Month;
+
+        return View();
+      }
+      catch (Exception ex)
+      {
+        _audit.Log(
+            "Statistics View",
+            "FAILED",
+            "ERROR",
+            ex.Message
+        );
+
+        TempData["Error"] = "Error loading statistics data";
+        return RedirectToAction("Index", "Home");
+      }
     }
   }
 }

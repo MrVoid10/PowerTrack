@@ -1,0 +1,83 @@
+﻿@{
+  ViewData["Title"] = "Admin Statistics";
+
+  var labelsJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.MonthLabels);
+  var valuesJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.MonthValues);
+}
+
+<h2>Admin Dashboard Statistics</h2>
+
+<div class="row mt-4">
+
+  <div class="col-md-3">
+    <div class="card bg-primary text-white p-3">
+      <h5>Total Users</h5>
+      <h2>@ViewBag.TotalUsers</h2>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card bg-success text-white p-3">
+      <h5>Total Records</h5>
+      <h2>@ViewBag.TotalRecords</h2>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card bg-warning text-dark p-3">
+      <h5>Total Consumption</h5>
+      <h2>@ViewBag.TotalConsumption kWh</h2>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card bg-danger text-white p-3">
+      <h5>Total Money Spent</h5>
+      <h2>@ViewBag.TotalMoneySpent MDL</h2>
+    </div>
+  </div>
+
+</div>
+
+<hr />
+
+<h3>Monthly Consumption (Current Year)</h3>
+
+<canvas id="adminChart" height="120"></canvas>
+
+@section Scripts {
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+
+    const labels = @Html.Raw(labelsJson);
+    const values = @Html.Raw(valuesJson);
+
+    if (labels.length > 0) {
+
+        const ctx = document.getElementById("adminChart").getContext("2d");
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Consumption kWh",
+                    data: values,
+                    backgroundColor: "#0d6efd"
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+    }
+
+  </script>
+
+}

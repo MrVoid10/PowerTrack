@@ -1,8 +1,50 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+  ViewData["Title"] = "Dashboard";
+
+  int year = ViewBag.Year ?? DateTime.Now.Year;
+  int month = ViewBag.Month ?? DateTime.Now.Month;
+
+  decimal totalConsumption = ViewBag.TotalConsumption ?? 0;
+  decimal totalCost = ViewBag.TotalCost ?? 0;
+
+  string monthName =
+      System.Globalization.CultureInfo.CurrentCulture
+      .DateTimeFormat.GetMonthName(month);
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-4">
+
+  <h2 class="mb-4">Dashboard</h2>
+
+  <div class="alert alert-primary">
+    Showing data for:
+    <strong>@monthName @year</strong>
+  </div>
+
+  <div class="row">
+
+    <div class="col-md-6">
+      <div class="card shadow p-3">
+        <h5>Total Consumption</h5>
+        <h3>@totalConsumption kWh</h3>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card shadow p-3">
+        <h5>Total Cost</h5>
+        <h3>@totalCost MDL</h3>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mt-4">
+    <a asp-controller="Statistics"
+       asp-action="Index"
+       class="btn btn-outline-primary">
+      View Detailed Statistics
+    </a>
+  </div>
+
 </div>

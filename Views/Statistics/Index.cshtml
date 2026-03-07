@@ -1,8 +1,8 @@
 ﻿@{
   ViewData["Title"] = "Energy Statistics";
 
-  var labelsJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Labels);
-  var consumptionJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Consumption);
+  var labelsJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Labels ?? new List<string>());
+  var consumptionJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.Consumption ?? new List<decimal>());
 
   int selectedMonth = ViewBag.SelectedMonth;
   int selectedYear = ViewBag.SelectedYear;
@@ -13,17 +13,14 @@
   bool disableNext = selectedYear >= currentYear;
 }
 
-<h2>Energy Usage Statistics</h2>
+<h2 class="mb-4">Energy Usage Statistics</h2>
 
-<form method="get" asp-controller="Statistics" asp-action="Index" class="mb-3">
-
+<form method="get" asp-controller="Statistics" asp-action="Index" class="mb-4">
   <div class="row align-items-end">
 
-    <!-- Month Selector -->
     <div class="col-md-3">
       <label>Month</label>
       <select name="month" class="form-control">
-
         @for (int m = 1; m <= 12; m++)
         {
           bool disableMonth = selectedYear == currentYear && m > currentMonth;
@@ -34,11 +31,9 @@
             @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
           </option>
         }
-
       </select>
     </div>
 
-    <!-- Year Selector -->
     <div class="col-md-3">
       <label>Year</label>
       <input type="number"
@@ -49,9 +44,7 @@
              class="form-control" />
     </div>
 
-    <!-- Buttons -->
     <div class="col-md-6 mt-2">
-
       <button type="submit" class="btn btn-primary">
         Show
       </button>
@@ -69,9 +62,7 @@
          asp-route-year="@(selectedYear + 1)">
         Next Year ▶
       </a>
-
     </div>
-
   </div>
 </form>
 
@@ -86,32 +77,125 @@
 
 <hr />
 
-<canvas id="energyChart" height="100"></canvas>
+@if (((List<string>)ViewBag.Labels)?.Any() == true)
+{
+  <div class="row">
+
+    <!-- LINE CHART -->
+    <div class="col-md-8">
+      <canvas id="energyChart" height="100"></canvas>
+    </div>
+
+    <!-- PIE CHART -->
+    <div class="col-md-4">
+      <canvas id="pieChart"></canvas>
+    </div>
+
+  </div>
+}
+else
+{
+  <div class="alert alert-info mt-4">
+    No consumption data available for selected period.
+  </div>
+}
 
 @section Scripts {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const ctx = document.getElementById('energyChart').getContext('2d');
 
-    new Chart(ctx, {
-        type: 'line',
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const labels = @Html.Raw(labelsJson);
+        const dataValues = @Html.Raw(consumptionJson);
+
+        if (!labels || labels.length === 0)
+            return;
+
+        // ===== LINE CHART =====
+        const lineCtx = document.getElementById('energyChart').getContext('2d');
+
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Consumption (kWh)',
+                    data: dataValues,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.3,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+    // ===== PIE CHART =====
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+    // dacă nu există date
+    if (!dataValues || dataValues.length === 0)
+        return;
+
+    // detect min & max
+    const maxValue = Math.max(...dataValues);
+    const minValue = Math.min(...dataValues);
+
+    // verificare dacă toate valorile sunt egale
+    const allEqual = dataValues.every(v => v === dataValues[0]);
+
+    let backgroundColors;
+
+    if (allEqual) {
+        // toate lunile au aceeași valoare
+        backgroundColors = dataValues.map(() => '#6c757d'); // gri neutru
+    } else {
+        backgroundColors = dataValues.map(v => {
+            if (v === maxValue)
+                return '#dc3545'; // 🔴 maxim
+            if (v === minValue)
+                return '#198754'; // 🟢 minim
+            return '#0d6efd';     // 🔵 normal
+        });
+    }
+
+    new Chart(pieCtx, {
+        type: 'pie',
         data: {
-            labels: @Html.Raw(labelsJson),
+            labels: labels,
             datasets: [{
-                label: 'Consumption (kWh)',
-                data: @Html.Raw(consumptionJson),
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.2
+                data: dataValues,
+                backgroundColor: backgroundColors
             }]
         },
         options: {
             responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            let value = context.raw;
+
+                            if (value === maxValue && !allEqual)
+                                label += ' (Highest)';
+                            else if (value === minValue && !allEqual)
+                                label += ' (Lowest)';
+
+                            return `${label}: ${value} kWh`;
+                        }
+                    }
                 }
             }
         }
+    });
+
     });
   </script>
 }
