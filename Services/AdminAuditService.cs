@@ -1,4 +1,0 @@
-﻿//using PowerTrack.Data;
-//using PowerTrack.Models;
-//using Microsoft.EntityFrameworkCore;
-//namespace PowerTrack.Services { public class AdminAuditService { private readonly ApplicationDbContext _context; public AdminAuditService(ApplicationDbContext context) { _context = context; } public async Task<List<AuditLog>> GetAuditLogs(int page = 1, int pageSize = 50, string? logType = null) { var query = _context.AuditLogs.AsQueryable(); if (!string.IsNullOrEmpty(logType)) { query = query.Where(x => x.LogType.ToLower() == logType.ToLower()); } return await query.OrderByDescending(x => x.Timestamp).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(); } public async Task<int> GetTotalCount(string? logType = "INFO") { var query = _context.AuditLogs.AsQueryable(); if (!string.IsNullOrEmpty(logType)) { query = query.Where(x => x.LogType.ToLower() == logType.ToLower()); } return await query.CountAsync(); } } }

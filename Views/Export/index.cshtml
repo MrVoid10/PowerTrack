@@ -1,0 +1,76 @@
+﻿@{
+  ViewData["Title"] = "Import Export Data";
+  bool isAdmin = ViewBag.IsAdmin ?? false;
+}
+
+<h2>Import / Export Energy Data</h2>
+
+<div class="mb-4">
+
+  <h5>Export Excel</h5>
+
+  <form method="get"
+        asp-controller="Export"
+        asp-action="ExportExcel">
+
+    @if (isAdmin)
+    {
+      <div class="form-check mb-2">
+        <input class="form-check-input"
+               type="checkbox"
+               value="true"
+               name="allUsers"
+               id="chkAllUsersExport" />
+
+        <label class="form-check-label"
+               for="chkAllUsersExport">
+          Export for All Users
+        </label>
+      </div>
+    }
+
+    <button class="btn btn-success" type="submit">
+      Export Excel
+    </button>
+
+  </form>
+
+</div>
+
+<hr />
+
+<h4>Import Excel</h4>
+
+<form asp-controller="Export"
+      asp-action="ImportExcel"
+      method="post"
+      enctype="multipart/form-data">
+
+  <input type="file"
+         name="file"
+         class="form-control mb-3"
+         accept=".xlsx" />
+
+  @if (isAdmin)
+  {
+    <div class="form-check mb-2">
+
+      <input class="form-check-input"
+             type="checkbox"
+             name="allUsers"
+             value="true"
+             id="chkAllUsersImport" />
+
+      <label class="form-check-label"
+             for="chkAllUsersImport">
+        Import for All Users
+      </label>
+
+    </div>
+  }
+
+  <button class="btn btn-primary">
+    Import Excel
+  </button>
+
+</form>
